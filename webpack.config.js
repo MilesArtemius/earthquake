@@ -3,7 +3,7 @@ const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const CopyPlugin = require("copy-webpack-plugin");
 
 module.exports = {
-    entry: ["@babel/polyfill", "./src/game.js"],
+    entry: ["@babel/polyfill", "./src/index.js"],
     output: {
         path: path.join(__dirname, './public/'),
         filename: "./all.min.js"
@@ -13,18 +13,6 @@ module.exports = {
     },
     module: {
         rules: [
-            {
-                test: /\.css$/,
-                exclude: /(node_modules)/,
-                use: [
-                    {
-                        loader: 'style-loader'
-                    },
-                    {
-                        loader: 'css-loader'
-                    }
-                ]
-            },
             {
                 test: /\.js$/,
                 exclude: /(node_modules|bower_components)/,
@@ -43,6 +31,7 @@ module.exports = {
             patterns: [
                 { from: "./src/files/", to: "./files/" },
                 { from: "./src/index.html", to: "./index.html" },
+                { from: "./src/index.css", to: "./index.css" },
                 { from: "./src/favicon.ico", to: "./favicon.ico" }
             ]
         })
