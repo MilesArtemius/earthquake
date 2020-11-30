@@ -60,7 +60,7 @@ export async function load_map (path) {
             name: t.name,
             xCount: Math.floor(t['imagewidth'] / map_data['tilewidth']),
             yCount: Math.floor(t['imageheight'] / map_data['tileheight'])
-        }
+        };
         tile_sets.push(ts);
     }
 }
@@ -79,14 +79,14 @@ export async function load_file (path) {
 
 export function parse_entities () {
     for (const layer of map_data['layers']) if (layer.type === 'objectgroup')
-        for (const object of layer.objects) if (object.name === 'player') {
+        for (const object of layer['objects']) if (object.name === 'player') {
             factory[object.type] = class extends factory[object.type] {
                 constructor() {
                     super(object.name,
                         tile_size, level === 2 ? (floor.h + floor.l - tile_size) / 2 : floor.l - tile_size,
                         tile_size, tile_size);
                 }
-            }
+            };
             initPlayer(factory[object.type]);
         } else {
             factory[object.type] = class extends factory[object.type] {

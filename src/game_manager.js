@@ -81,7 +81,7 @@ export function initPlayer (obj) { entities.push(new obj()); }
 
 
 // functions
-const add_wall = (cre, x, lower) => {
+function add_wall (cre, x, lower) {
     let wall_class = Entity;
     if (cre < 10 && (level !== 2)) {
         if (((world_offset - triple.l < tile_size * 10) || (world_offset - duple.l < tile_size * 7)) && !lower) return false;
@@ -110,7 +110,7 @@ const add_wall = (cre, x, lower) => {
 }
 
 function emit_wall () {
-    const index = primes.length - 1 - Math.round(world_run / 5)
+    const index = primes.length - 1 - Math.round(world_run / 5);
     const random = Math.round(Math.random() * view.w);
 
     if ((random % primes[index >= 0 ? index : 0] === 0) && walls_rem > 0) {
