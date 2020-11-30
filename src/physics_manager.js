@@ -12,9 +12,14 @@ import {
     world_speedup
 } from './map_manager.js';
 
+
+// declarations
 export let gravity = 1;
 let dpc_y = 0;
 
+
+
+// initiator
 export function init_physics () {
     gravity = 1;
     dpc_y = 0;
@@ -23,23 +28,9 @@ export function init_physics () {
     set_callback(queryEntities);
 }
 
-function queryEntities (key) {
-    const new_gravity = ((key === 'w') || (key === 'ArrowUp')) ? -1 : 1;
-    if (new_gravity !== gravity) {
-        gravity = new_gravity;
-        for (const entity of entities) {
-            if (((level === 1) && (entity.name === 'player')) || ((level === 2) && (entity.name !== 'player'))) {
-                if (entity.fly !== 0) {
-                    entity.y_speed = -entity.y_speed;
-                    entity.y_speed_prev = entity.y_speed;
-                }
-                entity.fly = 0;
-                entity.flying = true;
-            }
-        }
-    }
-}
 
+
+// functions
 export function update_player (player) {
     if (player.flying) { // 100 times slower than real
         player.fly += 0.015;
@@ -82,6 +73,7 @@ export function trip (player) {
     else player.pos_y = rand;
 }
 
+
 export function count_offset () {
     return world_offset / dpc_y / 100;
 }
@@ -99,30 +91,37 @@ export function get_text_by_size(size) {
     }
 }
 
+
 export function entityAtXY (obj, x, y, any) {
-    for (let i = 0; i < entities.length; i++) {
-        const e = entities[i]
-        if ((e.name !== obj.name) || any) {
-            if (
-                x + obj.size_x < e.pos_x ||
-                y + obj.size_y < e.pos_y ||
-                x > e.pos_x + e.size_x ||
-                y > e.pos_y + e.size_y
-            ) continue;
-            return e;
-        }
-    }
-    return null
+    for (const entity of entities)
+        if (((entity.name !== obj.name) || any) && (!(x + obj.size_x < entity.pos_x ||
+            y + obj.size_y < entity.pos_y || x > entity.pos_x + entity.size_x || y > entity.pos_y + entity.size_y)))
+            return entity;
+    return null;
 }
 
 export function inColumn (obj) {
-    for (let i = 0; i < entities.length; i++) {
-        const e = entities[i]
-        if (
-            obj.pos_x + obj.size_x < e.pos_x ||
-            obj.pos_x > e.pos_x + e.size_x
-        ) continue
-        return e
+    for (const entity of entities)
+        if (!(obj.pos_x + obj.size_x < entity.pos_x || obj.pos_x > entity.pos_x + entity.size_x))
+            return entity;
+    return null;
+}
+
+
+
+// listeners
+function queryEntities (key) {
+    const new_gravity = ((key === 'w') || (key === 'ArrowUp')) ? -1 : 1;
+    if (new_gravity !== gravity) {
+        gravity = new_gravity;
+        for (const entity of entities)
+            if (((level === 1) && (entity.name === 'player')) || ((level === 2) && (entity.name !== 'player'))) {
+                if (entity.fly !== 0) {
+                    entity.y_speed = -entity.y_speed;
+                    entity.y_speed_prev = entity.y_speed;
+                }
+                entity.fly = 0;
+                entity.flying = true;
+            }
     }
-    return null
 }

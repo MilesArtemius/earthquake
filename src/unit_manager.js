@@ -4,6 +4,8 @@ import { view } from './map_manager.js';
 import { entityAtXY, gravity, trip, update_npc, update_player } from './physics_manager.js';
 import { escape } from './event_manager.js';
 
+
+// declarations
 export class Entity {
     constructor (name, size_x, size_y) {
         this.name = name;

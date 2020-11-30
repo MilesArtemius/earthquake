@@ -1,22 +1,22 @@
 import { factory, fix_offsets, initPlayer, level } from './game_manager.js';
+import { load_img } from './sprite_manager.js';
 
-let mapData = null;
-let tLayer = null;
-let imgLoadCount = 0;
-let imgLoaded = false;
-let jsonLoaded = false;
-let tilesets = [];
 
-let xCount = 0;
-let yCount = 0;
+// declarations
+let map_data = null;
+let tiles_layer = null;
+let tile_sets = [];
+
+let x_count = 0;
+let y_count = 0;
 
 export let view = { x: 0, y: 0, w: window.innerWidth, h: window.innerHeight };
 
-export let tSize = { x: 32, y: 32 };
-let mSize = { x: 8, y: 16 };
+export let t_size = { x: 32, y: 32 };
+let m_size = { x: 8, y: 16 };
 
-export let tileSize = 135;
-let mapSize = { x: 1080, y: 2160 };
+export let tile_size = 135;
+let map_size = { x: 1080, y: 2160 };
 export let floor = { l: 945, h: 135 };
 
 export let world_speed = 32;
@@ -26,194 +26,118 @@ export let world_offset = 0;
 
 
 
-export function map_init () {
-    mapData = null;
-    tLayer = null;
-    imgLoadCount = 0;
-    imgLoaded = false;
-    jsonLoaded = false;
-    tilesets = [];
-
+// initiator
+export async function load_map (path) {
+    tiles_layer = null;
+    tile_sets = [];
     view = { x: 0, y: 0, w: window.innerWidth, h: window.innerHeight };
-
-    xCount = 0;
-    yCount = 0;
-
-    tSize = { x: 32, y: 32 };
-    mSize = { x: 8, y: 16 };
-
-    tileSize = 135;
-    mapSize = { x: 1080, y: 2160 };
-    floor = { l: 945, h: 135 };
-
     world_speed = 32;
     world_speedup = 0.001;
     world_run = 0;
     world_offset = 0;
-}
 
-export function loadMap (path) {
-    const request = new XMLHttpRequest()
-    request.onreadystatechange = function () {
-        if (request.readyState === 4 && request.status === 200) {
-            parseMap(request.responseText)
-        }
-    }
-    request.open('GET', "files/" + path, true)
-    request.send()
-}
+    map_data = JSON.parse(await load_file(path));
+    x_count = map_data['width'];
+    y_count = map_data['height'];
+    t_size.x = map_data['tilewidth'];
+    t_size.y = map_data['tileheight'];
+    tile_size = Math.ceil(window.innerHeight / y_count);
+    m_size.x = x_count * t_size.x;
+    m_size.y = y_count * t_size.y;
 
-export function parseMap (tilesJSON) {
-    mapData = JSON.parse(tilesJSON)
-    xCount = mapData.width;
-    yCount = mapData.height;
-    tSize.x = mapData.tilewidth;
-    tSize.y = mapData.tileheight;
-    tileSize = Math.ceil(window.innerHeight / yCount)
-    mSize.x = xCount * tSize.x
-    mSize.y = yCount * tSize.y
+    map_size.x = x_count * tile_size;
+    map_size.y = y_count * tile_size;
 
-    mapSize.x = xCount * tileSize
-    mapSize.y = yCount * tileSize
+    floor.l = map_size.y - tile_size;
+    floor.h = tile_size;
 
-    floor.l = mapSize.y - tileSize;
-    floor.h = tileSize;
-
-    for (let i = 0; i < mapData.tilesets.length; i++) {
-        let img = new Image()
-        img.onload = function () {
-            imgLoadCount++
-            if (imgLoadCount === mapData.tilesets.length) imgLoaded = true;
-        }
-        img.src = "files/" + mapData.tilesets[i].image
-        const t = mapData.tilesets[i]
+    for (const tile_set of map_data['tilesets']) {
+        const img = await load_img(tile_set.image);
+        const t = tile_set;
         const ts = {
             firstgid: t.firstgid,
             image: img,
             name: t.name,
-            xCount: Math.floor(t.imagewidth / mapData.tilewidth),
-            yCount: Math.floor(t.imageheight / mapData.tileheight)
+            xCount: Math.floor(t['imagewidth'] / map_data['tilewidth']),
+            yCount: Math.floor(t['imageheight'] / map_data['tileheight'])
         }
-        tilesets.push(ts)
+        tile_sets.push(ts);
     }
-    jsonLoaded = true
 }
 
-export function draw_map (ctx) {
-    if (!imgLoaded || !jsonLoaded) {
-        setTimeout(function () {
-            draw_map(ctx)
-        }, 100)
-    } else {
-        if (tLayer === null) {
-            for (let id = 0; id < mapData.layers.length; id++) {
-                const layer = mapData.layers[id]
-                if (layer.type === 'tilelayer') {
-                    tLayer = layer
-                    break;
+
+
+// setters
+export function step (addition) { world_run += addition; }
+export function speedup (addition) { world_speed += addition; }
+
+
+// functions
+export async function load_file (path) {
+    return await (await fetch("files/" + path)).text();
+}
+
+export function parse_entities () {
+    for (const layer of map_data['layers']) if (layer.type === 'objectgroup')
+        for (const object of layer.objects) if (object.name === 'player') {
+            factory[object.type] = class extends factory[object.type] {
+                constructor() {
+                    super(object.name,
+                        tile_size, level === 2 ? (floor.h + floor.l - tile_size) / 2 : floor.l - tile_size,
+                        tile_size, tile_size);
+                }
+            }
+            initPlayer(factory[object.type]);
+        } else {
+            factory[object.type] = class extends factory[object.type] {
+                constructor() {
+                    super(object.name, object.width / t_size.x * tile_size, object.height / t_size.y * tile_size);
                 }
             }
         }
-        for (let i = 0; i < tLayer.data.length; i++) {
-            if (tLayer.data[i] !== 0) {
-                const tile = getTile(tLayer.data[i])
-                let pX = (i % xCount) * tileSize
-                let pY = Math.floor(i / xCount) * tileSize
-                if (!isVisible(pX, pY, tileSize, tileSize)) continue;
-                ctx.drawImage(
-                    tile.img,
-                    tile.px,
-                    tile.py,
-                    tSize.x,
-                    tSize.y,
-                    pX,
-                    pY,
-                    tileSize,
-                    tileSize
-                );
-            }
-        }
-    }
 }
 
-function getTile (tileIndex) {
+
+function get_tile (tileIndex) {
     const tile = { img: null, px: 0, py: 0 };
-    const tileset = getTileset(tileIndex)
-    tile.img = tileset.image
-    const id = tileIndex - tileset.firstgid
-    const x = id % tileset.xCount
-    const y = Math.floor(id / tileset.xCount)
-    tile.px = x * tSize.x
-    tile.py = y * tSize.y
+    const tile_set = tile_sets.find(e => { return e.firstgid <= tileIndex });
+    tile.img = tile_set.image;
+    const id = tileIndex - tile_set.firstgid;
+    const x = id % tile_set.xCount;
+    const y = Math.floor(id / tile_set.xCount);
+    tile.px = x * t_size.x;
+    tile.py = y * t_size.y;
     return tile;
 }
 
-function getTileset (tileIndex) {
-    for (let i = tilesets.length - 1; i >= 0; i--) if (tilesets[i].firstgid <= tileIndex) return tilesets[i];
-    return null;
-}
-
 export function isVisible (x, y, width, height) {
-    return !(
-        x + width < view.x ||
-        y + height < view.y ||
-        x > view.x + view.w ||
-        y > view.y + view.h
-    );
+    return !((x + width < view.x) ||
+        (y + height < view.y) ||
+        (x > view.x + view.w) ||
+        (y > view.y + view.h));
 }
 
-export function step (addition) {
-    world_run += addition;
+export function draw_map (ctx) {
+    if (tiles_layer === null) tiles_layer = map_data['layers'].find(e => { return e.type === 'tilelayer' });
+    for (let i = 0; i < tiles_layer.data.length; i++) if (tiles_layer.data[i] !== 0) {
+        const tile = get_tile(tiles_layer.data[i]);
+        let pX = (i % x_count) * tile_size;
+        let pY = Math.floor(i / x_count) * tile_size;
+        if (!isVisible(pX, pY, tile_size, tile_size)) continue;
+        ctx.drawImage(tile.img, tile.px, tile.py, t_size.x, t_size.y, pX, pY, tile_size, tile_size);
+    }
 }
 
-export function speedup (addition) {
-    world_speed += addition;
-}
 
 export function spread (x, ctx) {
     view.x += x;
     world_offset += x;
     ctx.translate(-x, 0);
-    if (view.x > mapSize.x / 2) {
-        const limit = view.x - mapSize.x / 2;
+    if (view.x > map_size.x / 2) {
+        const limit = view.x - map_size.x / 2;
         ctx.translate(view.x, 0);
         fix_offsets(view.x);
         view.x = 0;
         spread(limit, ctx);
-    }
-}
-
-export function parseEntities () {
-    if (!imgLoaded || !jsonLoaded) {
-        setTimeout(function () {
-            parseEntities()
-        }, 100)
-    } else {
-        for (let j = 0; j < mapData.layers.length; j++) {
-            if (mapData.layers[j].type === 'objectgroup') {
-                const entities = mapData.layers[j]
-                for (let i = 0; i < entities.objects.length; i++) {
-                    const e = entities.objects[i]
-                    try {
-                        if (e.name === 'player') {
-                            factory[e.type] = class extends factory[e.type] {
-                                constructor() {
-                                    super(e.name,
-                                        tileSize, level === 2 ? (floor.h + floor.l - tileSize) / 2 : floor.l - tileSize,
-                                        tileSize, tileSize);
-                                }
-                            }
-                            initPlayer(factory[e.type]);
-                        } else {
-                            factory[e.type] = class extends factory[e.type] {
-                                constructor() {
-                                    super(e.name, e.width / tSize.x * tileSize, e.height / tSize.y * tileSize);
-                                }
-                            }
-                        }
-                    } catch (ex) { console.log('Ошибка создания: [' + e.type + ']' + e.type + ',' + ex); }
-                }
-            }
-        }
     }
 }

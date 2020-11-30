@@ -1,3 +1,4 @@
+// declarations
 const key = "scores";
 
 class Score {
@@ -8,6 +9,9 @@ class Score {
     }
 }
 
+
+
+// functions
 export function push_score (mode, score) {
     const scores = get_scores();
     scores.push(new Score(mode, score));
@@ -18,7 +22,6 @@ function get_scores () {
     const unpacked = JSON.parse(window.localStorage.getItem(key))
     return unpacked === null ? [] : unpacked;
 }
-
 
 
 function populate_score(score, i) {
@@ -53,13 +56,6 @@ function populate_score(score, i) {
     return elem;
 }
 
-function listener (event) {
-    if (event.key === 'Escape') {
-        document.getElementById("results").style.display = "none";
-        document.getElementById("menu").style.display = "block";
-        document.body.removeEventListener("keydown", listener);
-    }
-}
 
 export function display_results () {
     const scores = get_scores().sort((a, b) => {
@@ -80,4 +76,15 @@ export function display_results () {
     }
 
     document.body.addEventListener("keydown", listener);
+}
+
+
+
+// listener
+function listener (event) {
+    if (event.key === 'Escape') {
+        document.getElementById("results").style.display = "none";
+        document.getElementById("menu").style.display = "block";
+        document.body.removeEventListener("keydown", listener);
+    }
 }
