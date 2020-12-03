@@ -11,7 +11,7 @@ export async function load_atlas (atlasJson, atlasImg) {
     sprites = [];
     image = await load_img(atlasImg);
 
-    const atlas = JSON.parse(await load_file(atlasJson))
+    const atlas = JSON.parse(await load_file(atlasJson));
     for (const frame of atlas)
         sprites.push({
             name: frame.name,
@@ -28,7 +28,7 @@ export async function load_atlas (atlasJson, atlasImg) {
 export function load_img (path) {
     return new Promise(resolve => {
         const img = new Image();
-        img.onload = function () { resolve(img); }
+        img.onload = function () { resolve(img); };
         img.src = "files/" + path;
     });
 }

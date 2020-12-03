@@ -19,7 +19,7 @@ export function push_score (mode, score) {
 }
 
 function get_scores () {
-    const unpacked = JSON.parse(window.localStorage.getItem(key))
+    const unpacked = JSON.parse(window.localStorage.getItem(key));
     return unpacked === null ? [] : unpacked;
 }
 
